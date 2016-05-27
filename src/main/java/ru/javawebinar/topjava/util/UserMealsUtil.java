@@ -7,9 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.Month;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /**
  * GKislin
@@ -35,37 +33,45 @@ public class UserMealsUtil {
         // TODO return filtered list with correctly exceeded field
         List<UserMealWithExceed> getList = new ArrayList<>();
 
-        //Механизм расчета перерасхода калорий (данное исполнение учитывает, что у товарища всегда есть завтрак, обед и ужин)
-        boolean[] exceedValues = new boolean[mealList.size()];
-        int key = 0;
-        int sum = 0;
-        for (UserMeal user : mealList) {
-            //условие что все дни с обедом, днем и ужином
-            if (mealList.size() % 3 == 0) {
-                if ((key + 1) % 3 != 0) {
-                    sum += user.getCalories();
-                    key++;
-                } else {
-                    sum += user.getCalories();
-                    if (sum <= caloriesPerDay) {
-                        exceedValues[key] = false;
-                        exceedValues[key - 1] = false;
-                        exceedValues[key - 2] = false;
-                    } else {
-                        exceedValues[key] = true;
-                        exceedValues[key - 1] = true;
-                        exceedValues[key - 2] = true;
-                    }
-                    sum = 0;
-                    key++;
-                }
+        //вытаскиваем даты
+        List<LocalDate> date = new ArrayList<>();
+        date.add(mealList.get(0).getDateTime().toLocalDate());
+        for (int i = 1; i < mealList.size(); i++) {
+            if (!(mealList.get(i).getDateTime().toLocalDate().equals(mealList.get(i-1).getDateTime().toLocalDate()))){
+                date.add(mealList.get(i).getDateTime().toLocalDate());
             }
         }
+
+        //Считаем количество калорий
+        int[] call = new int[date.size()];
+        int day = 0;
+        int sum = 0;
+        for (int i = 0; i < mealList.size(); i++) {
+            if ((mealList.get(i).getDateTime().toLocalDate()).equals(date.get(day))){
+                sum += mealList.get(i).getCalories();
+                if ( i < mealList.size()-1) continue;
+            }
+            call[day] = sum;
+            day++;
+            sum = mealList.get(i).getCalories();
+        }
+
+        //карта ключ - дата, значение - количество сожранных калорий
+        Map<LocalDate,Integer> calInDate = new HashMap<>();
+        for (int i = 0; i < date.size(); i++) {
+            calInDate.put(date.get(i),call[i]);
+        }
+
         //Заполнение List<UserMealWithExceed> getList с уже просчитанным показателем перерасхода калорий
-        int keyExceedValues = 0;
         for (UserMeal user : mealList) {
-            UserMealWithExceed update = new UserMealWithExceed(user.getDateTime(),user.getDescription(),user.getCalories(),exceedValues[keyExceedValues]);
-            keyExceedValues++;
+            boolean isEceed = false;
+            LocalDate localDate = user.getDateTime().toLocalDate();
+            int cal = calInDate.get(localDate);
+            if (cal>caloriesPerDay) {
+                isEceed = true;
+            }
+            LocalDate temp = user.getDateTime().toLocalDate();
+            UserMealWithExceed update = new UserMealWithExceed(user.getDateTime(),user.getDescription(),user.getCalories(),isEceed);
             //Заполняем с учетом указанного времени выборки
             boolean keyUpdate = TimeUtil.isBetween(user.getDateTime().toLocalTime(),startTime,endTime);
             if (keyUpdate) getList.add(update);
