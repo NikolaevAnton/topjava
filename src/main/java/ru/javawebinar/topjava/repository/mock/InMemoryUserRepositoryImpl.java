@@ -14,8 +14,8 @@ import java.util.List;
  * 15.06.2015.
  */
 @Repository
-public class MockUserRepositoryImpl implements UserRepository {
-    private static final Logger LOG = LoggerFactory.getLogger(MockUserRepositoryImpl.class);
+public class InMemoryUserRepositoryImpl implements UserRepository {
+    private static final Logger LOG = LoggerFactory.getLogger(InMemoryUserRepositoryImpl.class);
 
     @Override
     public boolean delete(int id) {
